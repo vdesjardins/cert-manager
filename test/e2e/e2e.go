@@ -61,6 +61,10 @@ func RunE2ETests(t *testing.T) {
 		extraArgs = append(extraArgs, "--set", "image.tag="+framework.TestContext.BoulderImageTag)
 	}
 	InstallHelmChart(t, "boulder", "./contrib/charts/boulder", "boulder", "./test/fixtures/boulder-values.yaml", extraArgs...)
+
+	glog.Infof("Installing vault helm chart")
+	InstallHelmChart(t, "vault", "./contrib/charts/vault", "vault", "./test/fixtures/vault-values.yaml")
+
 	glog.Infof("Starting e2e run %q on Ginkgo node %d", framework.RunId, config.GinkgoConfig.ParallelNode)
 
 	var r []ginkgo.Reporter
