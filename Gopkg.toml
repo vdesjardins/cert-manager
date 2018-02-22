@@ -31,6 +31,10 @@ required = [
     name = "github.com/Azure/azure-sdk-for-go"
     version = "v12.0.0-beta"
 
+[[constraint]]
+  name = "github.com/hashicorp/vault"
+  version = "v0.9.3"
+
 # gengo needs to be manually pinned to the version listed in code-generators
 # Gopkg.toml, because the k8s project does not produce Gopkg.toml files & dep
 # does not parse the Godeps.json file to determine revisions to use.

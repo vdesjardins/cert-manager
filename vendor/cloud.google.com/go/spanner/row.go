@@ -50,19 +50,19 @@ import (
 // Supported types and their corresponding Cloud Spanner column type(s) are:
 //
 //	*string(not NULL), *NullString - STRING
-//	*[]NullString - STRING ARRAY
+//	*[]string, *[]NullString - STRING ARRAY
 //	*[]byte - BYTES
 //	*[][]byte - BYTES ARRAY
 //	*int64(not NULL), *NullInt64 - INT64
-//	*[]NullInt64 - INT64 ARRAY
+//	*[]int64, *[]NullInt64 - INT64 ARRAY
 //	*bool(not NULL), *NullBool - BOOL
-//	*[]NullBool - BOOL ARRAY
+//	*[]bool, *[]NullBool - BOOL ARRAY
 //	*float64(not NULL), *NullFloat64 - FLOAT64
-//	*[]NullFloat64 - FLOAT64 ARRAY
+//	*[]float64, *[]NullFloat64 - FLOAT64 ARRAY
 //	*time.Time(not NULL), *NullTime - TIMESTAMP
-//	*[]NullTime - TIMESTAMP ARRAY
+//	*[]time.Time, *[]NullTime - TIMESTAMP ARRAY
 //	*Date(not NULL), *NullDate - DATE
-//	*[]NullDate - DATE ARRAY
+//	*[]civil.Date, *[]NullDate - DATE ARRAY
 //	*[]*some_go_struct, *[]NullRow - STRUCT ARRAY
 //	*GenericColumnValue - any Cloud Spanner type
 //
@@ -274,11 +274,13 @@ func errToStructArgType(p interface{}) error {
 // ToStruct fetches the columns in a row into the fields of a struct.
 // The rules for mapping a row's columns into a struct's exported fields
 // are as the following:
-// 1. If a field has a `spanner: "column_name"` tag, then decode column
-//    'column_name' into the field. A special case is the `spanner: "-"`
-//    tag, which instructs ToStruct to ignore the field during decoding.
-// 2. Otherwise, if the name of a field matches the name of a column (ignoring case),
-//    decode the column into the field.
+//
+//   1. If a field has a `spanner: "column_name"` tag, then decode column
+//      'column_name' into the field. A special case is the `spanner: "-"`
+//      tag, which instructs ToStruct to ignore the field during decoding.
+//
+//   2. Otherwise, if the name of a field matches the name of a column (ignoring case),
+//      decode the column into the field.
 //
 // The fields of the destination struct can be of any type that is acceptable
 // to spanner.Row.Column.

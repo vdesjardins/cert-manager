@@ -3,7 +3,7 @@
 // Package firehose provides the client and types for making API
 // requests to Amazon Kinesis Firehose.
 //
-// Amazon Kinesis Firehose is a fully-managed service that delivers real-time
+// Amazon Kinesis Firehose is a fully managed service that delivers real-time
 // streaming data to destinations such as Amazon Simple Storage Service (Amazon
 // S3), Amazon Elasticsearch Service (Amazon ES), and Amazon Redshift.
 //
@@ -14,7 +14,7 @@
 //
 // Using the Client
 //
-// To Amazon Kinesis Firehose with the SDK use the New function to create
+// To contact Amazon Kinesis Firehose with the SDK use the New function to create
 // a new service client. With that client you can make API requests to the service.
 // These clients are safe to use concurrently.
 //
