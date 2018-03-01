@@ -246,13 +246,14 @@ func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *
 	}
 }
 
-func NewCertManagerCAIssuer(name, secretName string) *v1alpha1.Issuer {
+func NewCertManagerCAIssuer(name, secretName string, duration time.Duration) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
+				Duration: duration,
 				CA: &v1alpha1.CAIssuer{
 					SecretName: secretName,
 				},

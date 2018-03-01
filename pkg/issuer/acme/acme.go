@@ -76,6 +76,10 @@ func New(issuer v1alpha1.GenericIssuer,
 		return nil, fmt.Errorf("acme server, private key and email are required fields")
 	}
 
+	if issuer.GetSpec().RenewBefore != 0 || issuer.GetSpec().Duration != 0 {
+		return nil, fmt.Errorf("renewBefore and duration are invalid fields for this issuer")
+	}
+
 	if resourceNamespace == "" {
 		return nil, fmt.Errorf("resource namespace cannot be empty")
 	}

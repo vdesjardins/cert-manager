@@ -21,8 +21,6 @@ import (
 	"github.com/jetstack/cert-manager/pkg/util/pki"
 )
 
-const renewBefore = time.Hour * 24 * 30
-
 const (
 	errorIssuerNotFound       = "ErrIssuerNotFound"
 	errorIssuerNotReady       = "ErrIssuerNotReady"
@@ -117,7 +115,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 	// as there is an existing certificate, or we may create one below, we will
 	// run scheduleRenewal to schedule a renewal if required at the end of
 	// execution.
-	defer c.scheduleRenewal(crt)
+	defer c.scheduleRenewal(crt, issuerObj)
 
 	crtCopy := crt.DeepCopy()
 
@@ -135,11 +133,8 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		return nil
 	}
 
-	// calculate the amount of time until expiry
-	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
-	// calculate how long until we should start attempting to renew the
-	// certificate
-	renewIn := durationUntilExpiry - renewBefore
+	renewIn := calculateTimeBeforeExpiry(cert, issuerObj)
+
 	// if we should being attempting to renew now, then trigger a renewal
 	if renewIn <= 0 {
 		err := c.renew(ctx, i, crtCopy)
@@ -166,17 +161,7 @@ func (c *Controller) getGenericIssuer(crt *v1alpha1.Certificate) (v1alpha1.Gener
 	}
 }
 
-func needsRenew(cert *x509.Certificate) bool {
-	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
-	renewIn := durationUntilExpiry - renewBefore
-	// step three: check if referenced secret is valid (after start & before expiry)
-	if renewIn <= 0 {
-		return true
-	}
-	return false
-}
-
-func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
+func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate, issuer v1alpha1.GenericIssuer) {
 	key, err := keyFunc(crt)
 
 	if err != nil {
@@ -191,8 +176,7 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate) {
 		return
 	}
 
-	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
-	renewIn := durationUntilExpiry - renewBefore
+	renewIn := calculateTimeBeforeExpiry(cert, issuer)
 
 	c.scheduledWorkQueue.Add(key, renewIn)
 
@@ -322,4 +306,19 @@ func (c *Controller) updateCertificateStatus(crt *v1alpha1.Certificate) error {
 	// for CRDs (https://github.com/kubernetes/kubernetes/issues/38113)
 	_, err := c.cmClient.CertmanagerV1alpha1().Certificates(crt.Namespace).Update(crt)
 	return err
+}
+
+func calculateTimeBeforeExpiry(cert *x509.Certificate, issuerObj v1alpha1.GenericIssuer) time.Duration {
+	renew := issuer.RenewCertificateBefore
+	if issuerObj.GetSpec().RenewBefore != 0 {
+		renew = issuerObj.GetSpec().RenewBefore
+	}
+
+	// calculate the amount of time until expiry
+	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
+	// calculate how long until we should start attempting to renew the
+	// certificate
+	renewIn := durationUntilExpiry - renew
+
+	return renewIn
 }
