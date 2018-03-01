@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"time"
 
 	"github.com/golang/glog"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -18,6 +19,9 @@ import (
 )
 
 const (
+	// default certificateDuration of zero, we let ACME decide
+	certificateDuration = time.Duration(0)
+
 	errorIssueCert = "ErrIssueCert"
 
 	successCertIssued = "CertIssueSuccess"
@@ -58,11 +62,17 @@ func (a *Acme) obtainCertificate(ctx context.Context, crt *v1alpha1.Certificate)
 		return nil, nil, fmt.Errorf("error creating certificate request: %s", err)
 	}
 
+	// get issuer requested duration
+	certDuration := certificateDuration
+	if a.issuer.GetSpec().Duration != 0 {
+		certDuration = a.issuer.GetSpec().Duration
+	}
+
 	// obtain a certificate from the acme server
 	certSlice, certURL, err := cl.CreateCert(
 		ctx,
 		csr,
-		0,
+		certDuration,
 		true,
 	)
 	if err != nil {
