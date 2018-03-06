@@ -20,11 +20,9 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (err error)
 	issuerCopy := iss.DeepCopy()
 	i, err := c.issuerFactory.IssuerFor(issuerCopy)
 
-	if err != nil {
-		return err
+	if err == nil {
+		err = i.Setup(ctx)
 	}
-
-	err = i.Setup(ctx)
 	defer func() {
 		if saveErr := c.updateIssuerStatus(issuerCopy); saveErr != nil {
 			errs := []error{saveErr}
