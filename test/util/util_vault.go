@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"path"
 	"time"
@@ -49,8 +48,6 @@ type VaultInitializer struct {
 func NewVaultInitializer(container, rootMount, intermediateMount, role string) (*VaultInitializer, error) {
 	args := []string{"port-forward", "-n", "vault", container, "8200:8200"}
 	cmd := exec.Command("kubectl", args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 	err := cmd.Start()
 	if err != nil {
 		glog.Fatalf("Error starting port-forward: %s", err.Error())
