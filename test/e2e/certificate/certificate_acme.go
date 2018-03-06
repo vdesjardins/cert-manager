@@ -57,7 +57,7 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(certificateSecretName, metav1.GetOptions{})
 		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), certificateSecretName)))
 		By("Creating an Issuer")
-		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, framework.TestContext.ACMEURL, testingACMEEmail, testingACMEPrivateKey))
+		_, err = f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, framework.TestContext.ACMEURL, testingACMEEmail, testingACMEPrivateKey, 0, 0))
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for Issuer to become Ready")
 		err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
@@ -121,4 +121,49 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Get(certificateSecretName, metav1.GetOptions{})
 		Expect(err).To(MatchError(apierrors.NewNotFound(corev1.Resource("secrets"), certificateSecretName)))
 	})
+
+	cases := []struct {
+		inputDuration    time.Duration
+		inputRenewBefore time.Duration
+		expectedDuration time.Duration
+		label            string
+		event            string
+	}{
+		{time.Hour * 24 * 365, 0, time.Hour * 24 * 90, "NEWT should obtain a valid certificate with duration of 90 days from ACME server configured with a TTL of 90 days when asking for a duration of 365 days", "WarnCertificateDuration"},
+		{time.Hour * 24 * 240, time.Hour * 24 * 120, time.Hour * 24 * 90, "NEWT should obtain a valid certificate with a warning event when renewBefore is bigger than the duration", "WarnScheduleModified"},
+	}
+
+	for _, v := range cases {
+		v := v
+		It(v.label, func() {
+			issuerName := "test-acme-issuer-duration"
+			certificateName := "test-acme-certificate-duration"
+			certificateSecretName := "test-acme-certificate-duration"
+
+			By("Creating an Issuer")
+			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerACMEIssuer(issuerName, framework.TestContext.ACMEURL, testingACMEEmail, testingACMEPrivateKey, v.inputDuration, v.inputRenewBefore))
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Waiting for Issuer to become Ready")
+			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
+				issuerName,
+				v1alpha1.IssuerCondition{
+					Type:   v1alpha1.IssuerConditionReady,
+					Status: v1alpha1.ConditionTrue,
+				})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Creating a Certificate")
+			cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerACMECertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind, acmeIngressClass, util.ACMECertificateDomain, fmt.Sprintf("%s.%s", cmutil.RandStringRunes(5), util.ACMECertificateDomain)))
+			Expect(err).NotTo(HaveOccurred())
+
+			f.WaitCertificateIssuedValid(cert)
+			f.CertificateDurationValid(cert, v.expectedDuration)
+
+			f.WaitForCertificateEvent(cert, v.event)
+
+			By("Cleaning up")
+			f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
+		})
+	}
 })

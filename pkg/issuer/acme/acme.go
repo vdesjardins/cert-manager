@@ -58,7 +58,7 @@ type solver interface {
 }
 
 // New returns a new ACME issuer interface for the given issuer.
-func New(issuer v1alpha1.GenericIssuer,
+func New(issuerObj v1alpha1.GenericIssuer,
 	client kubernetes.Interface,
 	cmClient clientset.Interface,
 	recorder record.EventRecorder,
@@ -66,18 +66,18 @@ func New(issuer v1alpha1.GenericIssuer,
 	acmeHTTP01SolverImage string,
 	secretsLister corelisters.SecretLister,
 	ambientCreds bool) (issuer.Interface, error) {
-	if issuer.GetSpec().ACME == nil {
+	if issuerObj.GetSpec().ACME == nil {
 		return nil, fmt.Errorf("acme config may not be empty")
 	}
 
-	if issuer.GetSpec().ACME.Server == "" ||
-		issuer.GetSpec().ACME.PrivateKey.Name == "" ||
-		issuer.GetSpec().ACME.Email == "" {
+	if issuerObj.GetSpec().ACME.Server == "" ||
+		issuerObj.GetSpec().ACME.PrivateKey.Name == "" ||
+		issuerObj.GetSpec().ACME.Email == "" {
 		return nil, fmt.Errorf("acme server, private key and email are required fields")
 	}
 
-	if issuer.GetSpec().RenewBefore != 0 || issuer.GetSpec().Duration != 0 {
-		return nil, fmt.Errorf("renewBefore and duration are invalid fields for this issuer")
+	if err := issuer.ValidateDuration(issuerObj); err != nil {
+		return nil, fmt.Errorf("Vault %s", err.Error())
 	}
 
 	if resourceNamespace == "" {
@@ -85,13 +85,13 @@ func New(issuer v1alpha1.GenericIssuer,
 	}
 
 	return &Acme{
-		issuer:                   issuer,
+		issuer:                   issuerObj,
 		client:                   client,
 		cmClient:                 cmClient,
 		recorder:                 recorder,
 		secretsLister:            secretsLister,
-		dnsSolver:                dns.NewSolver(issuer, client, secretsLister, resourceNamespace, ambientCreds),
-		httpSolver:               http.NewSolver(issuer, client, secretsLister, acmeHTTP01SolverImage),
+		dnsSolver:                dns.NewSolver(issuerObj, client, secretsLister, resourceNamespace, ambientCreds),
+		httpSolver:               http.NewSolver(issuerObj, client, secretsLister, acmeHTTP01SolverImage),
 		issuerResourcesNamespace: resourceNamespace,
 	}, nil
 }

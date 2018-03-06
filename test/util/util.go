@@ -180,7 +180,6 @@ func addCertificateLastStatusConditionByType(client clientset.CertificateInterfa
 		if cond.Type == conditionType {
 			return fmt.Errorf("%s: Last Status: '%s' Reason: '%s', Message: '%s'", pollErr.Error(), cond.Status, cond.Reason, cond.Message)
 		}
-
 	}
 
 	return pollErr
@@ -333,13 +332,15 @@ func NewIngress(name, secretName string, annotations map[string]string, dnsNames
 	}
 }
 
-func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string) *v1alpha1.Issuer {
+func NewCertManagerACMEIssuer(name, acmeURL, acmeEmail, acmePrivateKey string, duration, renewBefore time.Duration) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
+				Duration:    duration,
+				RenewBefore: renewBefore,
 				ACME: &v1alpha1.ACMEIssuer{
 					Email:  acmeEmail,
 					Server: acmeURL,
