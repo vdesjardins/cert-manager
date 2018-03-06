@@ -12,11 +12,11 @@ const (
 	successVaultVerified = "VaultVerified"
 	messageVaultVerified = "Vault verified"
 
-	messageVaultClientInitFailed         = "Failed to initializing Vault client"
+	messageVaultClientInitFailed         = "Failed to initialize Vault client: "
 	errorVaultClientInitFailed           = "ErrVaultClientInit"
-	messageVaultHealthCheckFailed        = "Failed to call Vault health check"
+	messageVaultHealthCheckFailed        = "Failed to call Vault health check: "
 	errorVaultHealthCheckFailed          = "ErrVaultHealthCheck"
-	messageVaultStatusVerificationFailed = "Vault is not initialized or is sealed"
+	messageVaultStatusVerificationFailed = "Vault is not initialized or is sealed: "
 	errorVaultStatusVerificationFailed   = "ErrVaultStatus"
 )
 

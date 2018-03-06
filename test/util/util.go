@@ -344,14 +344,15 @@ func NewCertManagerCAIssuer(name, secretName string, duration time.Duration) *v1
 	}
 }
 
-func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken string, duration time.Duration) *v1alpha1.Issuer {
+func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken string, duration, renewBefore time.Duration) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
-				Duration: duration,
+				Duration:    duration,
+				RenewBefore: renewBefore,
 				Vault: &v1alpha1.VaultIssuer{
 					Server: vaultURL,
 					Path:   vaultPath,
@@ -368,14 +369,15 @@ func NewCertManagerVaultIssuerToken(name, vaultURL, vaultPath, vaultSecretToken 
 	}
 }
 
-func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, vaultSecretAppRole string, duration time.Duration) *v1alpha1.Issuer {
+func NewCertManagerVaultIssuerAppRole(name, vaultURL, vaultPath, vaultSecretAppRole string, duration, renewBefore time.Duration) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1alpha1.IssuerSpec{
 			IssuerConfig: v1alpha1.IssuerConfig{
-				Duration: duration,
+				Duration:    duration,
+				RenewBefore: renewBefore,
 				Vault: &v1alpha1.VaultIssuer{
 					Server: vaultURL,
 					Path:   vaultPath,

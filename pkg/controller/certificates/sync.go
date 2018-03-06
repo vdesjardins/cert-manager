@@ -309,7 +309,7 @@ func (c *Controller) updateCertificateStatus(crt *v1alpha1.Certificate) error {
 }
 
 func calculateTimeBeforeExpiry(cert *x509.Certificate, issuerObj v1alpha1.GenericIssuer) time.Duration {
-	renew := issuer.RenewCertificateBefore
+	renew := issuer.RenewCertificateBeforeDuration
 	if issuerObj.GetSpec().RenewBefore != 0 {
 		renew = issuerObj.GetSpec().RenewBefore
 	}

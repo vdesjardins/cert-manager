@@ -49,18 +49,19 @@ var _ = framework.CertManagerDescribe("Vault Certificate (Token)", func() {
 	vaultURL := "http://vault.vault:8200"
 	cases := []struct {
 		inputDuration    time.Duration
+		inputRenewBefore time.Duration
 		expectedDuration time.Duration
 		label            string
 	}{
-		{time.Hour * 24 * 35, time.Hour * 24 * 35, "35 days"},
-		{0, time.Hour * 24 * 90, "the default value (90 days)"},
+		{time.Hour * 24 * 35, 0, time.Hour * 24 * 35, "35 days"},
+		{0, 0, time.Hour * 24 * 90, "the default value (90 days)"},
 	}
 
 	for _, v := range cases {
 		v := v
 		It("should generate a new certificate valid for "+v.label, func() {
 			By("Creating an Issuer")
-			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerToken(issuerName, vaultURL, vaultPath, vaultSecretTokenName, v.inputDuration))
+			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerToken(issuerName, vaultURL, vaultPath, vaultSecretTokenName, v.inputDuration, v.inputRenewBefore))
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for Issuer to become Ready")
@@ -122,18 +123,19 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 	vaultURL := "http://vault.vault:8200"
 	cases := []struct {
 		inputDuration    time.Duration
+		inputRenewBefore time.Duration
 		expectedDuration time.Duration
 		label            string
 	}{
-		{time.Hour * 24 * 35, time.Hour * 24 * 35, "35 days"},
-		{0, time.Hour * 24 * 90, "the default value (90 days)"},
+		{time.Hour * 24 * 35, 0, time.Hour * 24 * 35, "35 days"},
+		{0, 0, time.Hour * 24 * 90, "the default value (90 days)"},
 	}
 
 	for _, v := range cases {
 		v := v
 		It("should generate a new certificate valid for "+v.label, func() {
 			By("Creating an Issuer")
-			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, vaultSecretAppRoleName, v.inputDuration))
+			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, vaultSecretAppRoleName, v.inputDuration, v.inputRenewBefore))
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Waiting for Issuer to become Ready")

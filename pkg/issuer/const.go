@@ -9,11 +9,11 @@ import (
 
 const (
 	// Default to 30 days if Issuer.spec.renewBefore is not set
-	RenewCertificateBefore = time.Hour * 24 * 30
+	RenewCertificateBeforeDuration = time.Hour * 24 * 30
 	// Minimum duration before renewal.
-	MinimumCertificateValidityDuration = time.Minute * 5
+	MinimumCertificateRenewalWindowDuration = time.Minute * 5
 	// Minium certificate duration
-	MinimumCertificateDuration = RenewCertificateBefore + MinimumCertificateValidityDuration
+	MinimumCertificateDuration = RenewCertificateBeforeDuration + MinimumCertificateRenewalWindowDuration
 
 	// IssuerACME is the name of the ACME issuer
 	IssuerACME string = "acme"
