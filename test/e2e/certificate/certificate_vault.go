@@ -13,77 +13,6 @@ import (
 	"github.com/jetstack/cert-manager/test/util"
 )
 
-var _ = framework.CertManagerDescribe("Vault Certificate (Token)", func() {
-	f := framework.NewDefaultFramework("create-vault-certificate")
-
-	rootMount := "root-ca"
-	intermediateMount := "intermediate-ca"
-	role := "kubernetes-vault"
-	issuerName := "test-vault-issuer"
-	certificateName := "test-vault-certificate"
-	certificateSecretName := "test-vault-certificate"
-	vaultSecretTokenName := "vault-token"
-	vaultPath := fmt.Sprintf("%s/sign/%s", intermediateMount, role)
-	var vaultInit *util.VaultInitializer
-
-	BeforeEach(func() {
-		By("Configuring the Vault server")
-		podList, err := f.KubeClientSet.CoreV1().Pods("vault").List(metav1.ListOptions{})
-		Expect(err).NotTo(HaveOccurred())
-		vaultPodName := podList.Items[0].Name
-		vaultInit, err = util.NewVaultInitializer(vaultPodName, rootMount, intermediateMount, role)
-		Expect(err).NotTo(HaveOccurred())
-		err = vaultInit.Setup()
-		Expect(err).NotTo(HaveOccurred())
-		_, err = f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Create(util.NewVaultTokenSecret(vaultSecretTokenName))
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	AfterEach(func() {
-		By("Cleaning up")
-		f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Delete(issuerName, nil)
-		f.KubeClientSet.CoreV1().Secrets(f.Namespace.Name).Delete(vaultSecretTokenName, nil)
-		vaultInit.Clean()
-	})
-
-	vaultURL := "http://vault.vault:8200"
-	cases := []struct {
-		inputDuration    time.Duration
-		inputRenewBefore time.Duration
-		expectedDuration time.Duration
-		label            string
-	}{
-		{time.Hour * 24 * 35, 0, time.Hour * 24 * 35, "35 days"},
-		{0, 0, time.Hour * 24 * 90, "the default value (90 days)"},
-	}
-
-	for _, v := range cases {
-		v := v
-		It("should generate a new certificate valid for "+v.label, func() {
-			By("Creating an Issuer")
-			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerToken(issuerName, vaultURL, vaultPath, vaultSecretTokenName, v.inputDuration, v.inputRenewBefore))
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Waiting for Issuer to become Ready")
-			err = util.WaitForIssuerCondition(f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name),
-				issuerName,
-				v1alpha1.IssuerCondition{
-					Type:   v1alpha1.IssuerConditionReady,
-					Status: v1alpha1.ConditionTrue,
-				})
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Creating a Certificate")
-			cert, err := f.CertManagerClientSet.CertmanagerV1alpha1().Certificates(f.Namespace.Name).Create(util.NewCertManagerVaultCertificate(certificateName, certificateSecretName, issuerName, v1alpha1.IssuerKind))
-			Expect(err).NotTo(HaveOccurred())
-
-			f.WaitCertificateIssuedValid(cert)
-			// Vault substract 30 seconds to the NotBefore date.
-			f.CertificateDurationValid(cert, v.expectedDuration+(30*time.Second))
-		})
-	}
-})
-
 var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 	f := framework.NewDefaultFramework("create-vault-certificate")
 
@@ -126,14 +55,17 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 		inputRenewBefore time.Duration
 		expectedDuration time.Duration
 		label            string
+		event            string
 	}{
-		{time.Hour * 24 * 35, 0, time.Hour * 24 * 35, "35 days"},
-		{0, 0, time.Hour * 24 * 90, "the default value (90 days)"},
+		{time.Hour * 24 * 35, 0, time.Hour * 24 * 35, "valid for 35 days", ""},
+		{0, 0, time.Hour * 24 * 90, "valid for the default value (90 days)", ""},
+		{time.Hour * 24 * 365, 0, time.Hour * 24 * 90, "with Vault configured maximum TTL duration (90 days) when requested duration is greater than TTL", "WarnCertificateDuration"},
+		{time.Hour * 24 * 240, time.Hour * 24 * 120, time.Hour * 24 * 90, "with a warning event when renewBefore is bigger than the duration", "WarnScheduleModified"},
 	}
 
 	for _, v := range cases {
 		v := v
-		It("should generate a new certificate valid for "+v.label, func() {
+		It("should generate a new certificate "+v.label, func() {
 			By("Creating an Issuer")
 			_, err := f.CertManagerClientSet.CertmanagerV1alpha1().Issuers(f.Namespace.Name).Create(util.NewCertManagerVaultIssuerAppRole(issuerName, vaultURL, vaultPath, vaultSecretAppRoleName, v.inputDuration, v.inputRenewBefore))
 			Expect(err).NotTo(HaveOccurred())
@@ -152,8 +84,13 @@ var _ = framework.CertManagerDescribe("Vault Certificate (AppRole)", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			f.WaitCertificateIssuedValid(cert)
+
 			// Vault substract 30 seconds to the NotBefore date.
 			f.CertificateDurationValid(cert, v.expectedDuration+(30*time.Second))
+
+			if v.event != "" {
+				f.WaitForCertificateEvent(cert, v.event)
+			}
 		})
 	}
 })
