@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	intscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
 	"k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	apiextcs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
@@ -14,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 	clientset "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/typed/certmanager/v1alpha1"
@@ -136,6 +138,31 @@ func WaitForCertificateCondition(client clientset.CertificateInterface, name str
 		},
 	)
 	return addCertificateLastStatusConditionByType(client, pollErr, name, condition.Type)
+}
+
+// WaitForCertificateEvent waits for an event on the named Certificate to contain
+// an event reason matches the supplied one.
+func WaitForCertificateEvent(client kubernetes.Interface, cert *v1alpha1.Certificate, reason string, timeout time.Duration) error {
+	return wait.PollImmediate(500*time.Millisecond, timeout,
+		func() (bool, error) {
+			glog.V(5).Infof("Waiting for Certificate event %v reason %#v", cert.Name, reason)
+			evts, err := client.Core().Events(cert.Namespace).Search(intscheme.Scheme, cert)
+			if err != nil {
+				return false, fmt.Errorf("error getting Certificate %v: %v", cert.Name, err)
+			}
+
+			return hasEvent(evts, reason), nil
+		},
+	)
+}
+
+func hasEvent(events *v1.EventList, reason string) bool {
+	for _, evt := range events.Items {
+		if evt.Reason == reason {
+			return true
+		}
+	}
+	return false
 }
 
 // try to retrieve last condition to help diagnose tests.

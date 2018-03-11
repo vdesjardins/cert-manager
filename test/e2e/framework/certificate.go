@@ -68,3 +68,9 @@ func (f *Framework) CertificateDurationValid(c *v1alpha1.Certificate, duration t
 		Failf("Expected duration of %s, got %s", duration, cert.NotAfter.Sub(cert.NotBefore))
 	}
 }
+
+func (f *Framework) WaitForCertificateEvent(cert *v1alpha1.Certificate, reason string) {
+	By("Verifying that the certificate has an event with reason " + reason)
+	err := testutil.WaitForCertificateEvent(f.KubeClientSet, cert, reason, defaultTimeout)
+	Expect(err).NotTo(HaveOccurred())
+}

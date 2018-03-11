@@ -40,6 +40,9 @@ const (
 	successCertificateRenewed = "CertificateRenewed"
 	successRenewalScheduled   = "RenewalScheduled"
 
+	warningCertificateDuration = "WarnCertificateDuration"
+	warningScheduleModified    = "WarnScheduleModified"
+
 	messageIssuerNotFound            = "Issuer %s does not exist"
 	messageIssuerNotReady            = "Issuer %s not ready"
 	messageIssuerErrorInit           = "Error initializing issuer: "
@@ -57,6 +60,9 @@ const (
 	messageCertificateIssued  = "Certificate issued successfully"
 	messageCertificateRenewed = "Certificate renewed successfully"
 	messageRenewalScheduled   = "Certificate scheduled for renewal in %d hours"
+
+	messageWarningCertificateDuration = "Certificate duration received from issuer is %s which is lower than the issuer configured duration of %s"
+	messageWarningScheduleModified    = "Certificate renewal requested schedule cannot be honored. Specified renewBefore of %s is greater than certificate total duration of %s"
 )
 
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
@@ -133,7 +139,7 @@ func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err e
 		return nil
 	}
 
-	renewIn := calculateTimeBeforeExpiry(cert, issuerObj)
+	renewIn := c.calculateTimeBeforeExpiry(cert, crtCopy, issuerObj)
 
 	// if we should being attempting to renew now, then trigger a renewal
 	if renewIn <= 0 {
@@ -176,7 +182,7 @@ func (c *Controller) scheduleRenewal(crt *v1alpha1.Certificate, issuer v1alpha1.
 		return
 	}
 
-	renewIn := calculateTimeBeforeExpiry(cert, issuer)
+	renewIn := c.calculateTimeBeforeExpiry(cert, crt, issuer)
 
 	c.scheduledWorkQueue.Add(key, renewIn)
 
@@ -308,14 +314,37 @@ func (c *Controller) updateCertificateStatus(crt *v1alpha1.Certificate) error {
 	return err
 }
 
-func calculateTimeBeforeExpiry(cert *x509.Certificate, issuerObj v1alpha1.GenericIssuer) time.Duration {
+func (c *Controller) calculateTimeBeforeExpiry(cert *x509.Certificate, crt *v1alpha1.Certificate, issuerObj v1alpha1.GenericIssuer) time.Duration {
+	// validate if the certificate received was with the issuer configured
+	// duration. If not we generate an event to warn the user of that fact.
+	certDuration := cert.NotAfter.Sub(cert.NotBefore)
+	if certDuration < issuerObj.GetSpec().Duration {
+		s := fmt.Sprintf(messageWarningCertificateDuration, certDuration, issuerObj.GetSpec().Duration)
+		glog.Info(s)
+		c.recorder.Event(crt, api.EventTypeWarning, warningCertificateDuration, s)
+	}
+
+	// renew is the duration before the certificate expiration that cert-manager
+	// will start to try renewing the certificate.
 	renew := issuer.RenewCertificateBeforeDuration
 	if issuerObj.GetSpec().RenewBefore != 0 {
 		renew = issuerObj.GetSpec().RenewBefore
 	}
 
+	// Verify that the renewBefore duration is inside the certificate validity duration.
+	// If not we notify with an event that we will renew the certificate
+	// before (certificate duration / 3) of its expiration duration.
+	if renew > certDuration {
+		s := fmt.Sprintf(messageWarningScheduleModified, renew, certDuration)
+		glog.Info(s)
+		c.recorder.Event(crt, api.EventTypeWarning, warningScheduleModified, s)
+		// We will renew 1/3 before the expiration date.
+		renew = certDuration / 3
+	}
+
 	// calculate the amount of time until expiry
 	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
+
 	// calculate how long until we should start attempting to renew the
 	// certificate
 	renewIn := durationUntilExpiry - renew
