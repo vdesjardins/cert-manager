@@ -129,8 +129,8 @@ var _ = framework.CertManagerDescribe("ACME Certificate (HTTP01)", func() {
 		label            string
 		event            string
 	}{
-		{time.Hour * 24 * 365, 0, time.Hour * 24 * 90, "NEWT should obtain a valid certificate with duration of 90 days from ACME server configured with a TTL of 90 days when asking for a duration of 365 days", "WarnCertificateDuration"},
-		{time.Hour * 24 * 240, time.Hour * 24 * 120, time.Hour * 24 * 90, "NEWT should obtain a valid certificate with a warning event when renewBefore is bigger than the duration", "WarnScheduleModified"},
+		{time.Hour * 24 * 365, 0, time.Hour * 24 * 90, "should obtain a valid certificate with duration of 90 days from ACME server configured with a TTL of 90 days when asking for a duration of 365 days", "WarnCertificateDuration"},
+		{time.Hour * 24 * 240, time.Hour * 24 * 120, time.Hour * 24 * 90, "should obtain a valid certificate with a warning event when renewBefore is bigger than the duration", "WarnScheduleModified"},
 	}
 
 	for _, v := range cases {
