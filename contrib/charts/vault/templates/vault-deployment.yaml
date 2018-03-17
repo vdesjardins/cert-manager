@@ -7,6 +7,8 @@ metadata:
   name: vault
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
@@ -26,3 +28,7 @@ spec:
         env:
         - name: VAULT_DEV_ROOT_TOKEN_ID
           value: vault-root-token
+        readinessProbe:
+          httpGet:
+            path: /v1/sys/health
+            port: 8200
