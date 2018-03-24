@@ -18,11 +18,6 @@ const (
 
 func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (err error) {
 	issuerCopy := iss.DeepCopy()
-	i, err := c.issuerFactory.IssuerFor(issuerCopy)
-
-	if err == nil {
-		err = i.Setup(ctx)
-	}
 	defer func() {
 		if saveErr := c.updateIssuerStatus(issuerCopy); saveErr != nil {
 			errs := []error{saveErr}
@@ -33,6 +28,7 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (err error)
 		}
 	}()
 
+	i, err := c.issuerFactory.IssuerFor(issuerCopy)
 	if err != nil {
 		s := messageErrorInitIssuer + err.Error()
 		glog.Info(s)
@@ -40,7 +36,8 @@ func (c *Controller) Sync(ctx context.Context, iss *v1alpha1.Issuer) (err error)
 		return err
 	}
 
-	return nil
+	err = i.Setup(ctx)
+	return err
 }
 
 func (c *Controller) updateIssuerStatus(iss *v1alpha1.Issuer) error {
