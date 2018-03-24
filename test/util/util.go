@@ -61,11 +61,11 @@ func WaitForIssuerCondition(client clientset.IssuerInterface, name string, condi
 			return issuer.HasCondition(condition), nil
 		},
 	)
-	return addIssuerLastStatusConditionByType(client, pollErr, name, condition.Type)
+	return wrapErrorWithIssuerStatusCondition(client, pollErr, name, condition.Type)
 }
 
 // try to retrieve last condition to help diagnose tests.
-func addIssuerLastStatusConditionByType(client clientset.IssuerInterface, pollErr error, name string, conditionType v1alpha1.IssuerConditionType) error {
+func wrapErrorWithIssuerStatusCondition(client clientset.IssuerInterface, pollErr error, name string, conditionType v1alpha1.IssuerConditionType) error {
 	if pollErr == nil {
 		return nil
 	}
@@ -99,11 +99,11 @@ func WaitForClusterIssuerCondition(client clientset.ClusterIssuerInterface, name
 			return issuer.HasCondition(condition), nil
 		},
 	)
-	return addClusterIssuerLastStatusConditionByType(client, pollErr, name, condition.Type)
+	return wrapErrorWithClusterIssuerStatusCondition(client, pollErr, name, condition.Type)
 }
 
 // try to retrieve last condition to help diagnose tests.
-func addClusterIssuerLastStatusConditionByType(client clientset.ClusterIssuerInterface, pollErr error, name string, conditionType v1alpha1.IssuerConditionType) error {
+func wrapErrorWithClusterIssuerStatusCondition(client clientset.ClusterIssuerInterface, pollErr error, name string, conditionType v1alpha1.IssuerConditionType) error {
 	if pollErr == nil {
 		return nil
 	}
@@ -137,7 +137,7 @@ func WaitForCertificateCondition(client clientset.CertificateInterface, name str
 			return certificate.HasCondition(condition), nil
 		},
 	)
-	return addCertificateLastStatusConditionByType(client, pollErr, name, condition.Type)
+	return wrapErrorWithCertificateStatusCondition(client, pollErr, name, condition.Type)
 }
 
 // WaitForCertificateEvent waits for an event on the named Certificate to contain
@@ -166,7 +166,7 @@ func hasEvent(events *v1.EventList, reason string) bool {
 }
 
 // try to retrieve last condition to help diagnose tests.
-func addCertificateLastStatusConditionByType(client clientset.CertificateInterface, pollErr error, name string, conditionType v1alpha1.CertificateConditionType) error {
+func wrapErrorWithCertificateStatusCondition(client clientset.CertificateInterface, pollErr error, name string, conditionType v1alpha1.CertificateConditionType) error {
 	if pollErr == nil {
 		return nil
 	}
