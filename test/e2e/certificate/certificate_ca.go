@@ -49,8 +49,16 @@ var _ = framework.CertManagerDescribe("CA Certificate", func() {
 		expectedDuration time.Duration
 		label            string
 	}{
-		{time.Hour * 24 * 35, time.Hour * 24 * 35, "35 days"},
-		{0, time.Hour * 24 * 365, "the default duration (365 days)"},
+		{
+			inputDuration:    time.Hour * 24 * 35,
+			expectedDuration: time.Hour * 24 * 35,
+			label:            "35 days",
+		},
+		{
+			inputDuration:    0,
+			expectedDuration: time.Hour * 24 * 365,
+			label:            "the default duration (365 days)",
+		},
 	}
 
 	for _, v := range cases {
