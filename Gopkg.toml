@@ -41,3 +41,10 @@ required = [
 [[override]]
   name = "k8s.io/gengo"
   revision = "b6c426f7730e6d66e6e476a85d1c3eb7633880e0"
+
+[prune]
+  [[prune.project]]
+    name = "github.com/hashicorp/vault"
+    unused-packages = true
+    non-go = true
+
