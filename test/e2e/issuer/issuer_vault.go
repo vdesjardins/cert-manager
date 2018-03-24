@@ -14,7 +14,7 @@ import (
 )
 
 var _ = framework.CertManagerDescribe("Vault Issuer", func() {
-	f := framework.NewDefaultFramework("create-ca-issuer")
+	f := framework.NewDefaultFramework("create-vault-issuer")
 
 	issuerName := "test-vault-issuer"
 	rootMount := "root-ca"
@@ -56,10 +56,30 @@ var _ = framework.CertManagerDescribe("Vault Issuer", func() {
 		waitCondition    v1alpha1.ConditionStatus
 		description      string
 	}{
-		{0, 0, v1alpha1.ConditionTrue, "should be ready with valid Vault AppRole"},
-		{15, 0, v1alpha1.ConditionFalse, "should fail when renewBefore is not set and duration is < than 30 days"},
-		{time.Hour * 24 * 90, time.Hour * 24 * 91, v1alpha1.ConditionFalse, "should fail when renewBefore is greater than duration"},
-		{0, time.Minute, v1alpha1.ConditionFalse, "should fail when renewBefore is shorter than 5 minutes"},
+		{
+			inputDuration:    0,
+			inputRenewBefore: 0,
+			waitCondition:    v1alpha1.ConditionTrue,
+			description:      "should be ready with valid Vault AppRole",
+		},
+		{
+			inputDuration:    15,
+			inputRenewBefore: 0,
+			waitCondition:    v1alpha1.ConditionFalse,
+			description:      "should fail when renewBefore is not set and duration is < than 30 days",
+		},
+		{
+			inputDuration:    time.Hour * 24 * 90,
+			inputRenewBefore: time.Hour * 24 * 91,
+			waitCondition:    v1alpha1.ConditionFalse,
+			description:      "should fail when renewBefore is greater than duration",
+		},
+		{
+			inputDuration:    0,
+			inputRenewBefore: time.Minute,
+			waitCondition:    v1alpha1.ConditionFalse,
+			description:      "should fail when renewBefore is shorter than 5 minutes",
+		},
 	}
 
 	for _, v := range cases {
