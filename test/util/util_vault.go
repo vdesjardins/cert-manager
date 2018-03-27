@@ -59,7 +59,7 @@ func NewVaultInitializer(container, rootMount, intermediateMount, role string) (
 	cfg.Address = "http://127.0.0.1:8200"
 	client, err := vault.NewClient(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to initialize vault client: ", err)
+		return nil, fmt.Errorf("Unable to initialize vault client: %s", err.Error())
 	}
 
 	client.SetToken(vaultToken)
