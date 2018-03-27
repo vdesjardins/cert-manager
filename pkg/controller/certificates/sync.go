@@ -65,6 +65,9 @@ const (
 	messageWarningScheduleModified    = "Certificate renewal requested schedule cannot be honored. Specified renewBefore of %s is greater than certificate total duration of %s"
 )
 
+// to help testing
+var now = time.Now
+
 func (c *Controller) Sync(ctx context.Context, crt *v1alpha1.Certificate) (err error) {
 	// step zero: check if the referenced issuer exists and is ready
 	issuerObj, err := c.getGenericIssuer(crt)
@@ -343,7 +346,7 @@ func (c *Controller) calculateTimeBeforeExpiry(cert *x509.Certificate, crt *v1al
 	}
 
 	// calculate the amount of time until expiry
-	durationUntilExpiry := cert.NotAfter.Sub(time.Now())
+	durationUntilExpiry := cert.NotAfter.Sub(now())
 
 	// calculate how long until we should start attempting to renew the
 	// certificate
