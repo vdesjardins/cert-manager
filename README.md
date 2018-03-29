@@ -11,6 +11,7 @@ and has borrowed some wisdom from other similar projects e.g.
 [kube-cert-manager](https://github.com/PalmStoneGames/kube-cert-manager).
 
 ![cert-manager high level overview diagram](/docs/high-level-overview.png)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fvdesjardins%2Fcert-manager.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fvdesjardins%2Fcert-manager?ref=badge_shield)
 
 ## Current status
 
@@ -81,3 +82,7 @@ Developer documentation should be available soon at [docs/devel](docs/devel).
 
 The [list of releases](https://github.com/jetstack/cert-manager/releases)
 is the best place to look for information on changes between releases.
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fvdesjardins%2Fcert-manager.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fvdesjardins%2Fcert-manager?ref=badge_large)
